@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io Chat</title>
+</head>
+
+<body>
+    <form id="chatForm">
+        <input type="text" id="messageInput" placeholder="Mesajınızı girin">
+        <button type="submit">Gönder</button>
+    </form>
+
+    <ul id="messageList"></ul>
+
+    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+
+        // Server'dan alınan mesajları dinle
+        socket.on('message', (data) => {
+            const messageList = document.getElementById('messageList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `Diğer Kullanıcı: ${data}`;
+            messageList.appendChild(listItem);
+        });
+
+        // Server'dan alınan özel mesajları dinle
+        socket.on('serverMessage', (data) => {
+            const messageList = document.getElementById('messageList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `Server: ${data}`;
+            messageList.appendChild(listItem);
+        });
+
+        document.getElementById('chatForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value;
+
+            // Kullanıcıdan alınan mesajı server'a gönder
+            socket.emit('message', message);
+
+            // Mesajı listeye ekle
+            const messageList = document.getElementById('messageList');
+            const listItem = document.createElement('li');
+            listItem.textContent = `Ben: ${message}`;
+            messageList.appendChild(listItem);
+
+            // Mesaj gönderildikten sonra inputu temizle
+            messageInput.value = '';
+        });
+    </script>
+</body>
+
+</html>
