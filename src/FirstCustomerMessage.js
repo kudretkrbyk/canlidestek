@@ -14,7 +14,7 @@ export default function FirstCustomerMessage({ _handleOpenForm }) {
           >
             <button
               id="1"
-              className="p-2 border-gray-200 bg-gray-200 rounded-xl rounded-tr-sm dark:bg-gray-700"
+              className="p-2 bg-blue-200  dark:bg-blue-700 rounded-xl rounded-tr-sm"
               onClick={_handleOpenForm}
             >
               Lorem Ipsum is simply dummy text of the printing and typesetting
@@ -23,7 +23,7 @@ export default function FirstCustomerMessage({ _handleOpenForm }) {
 
             <button
               id="2"
-              className="p-2 border-gray-200 bg-gray-200 rounded-xl rounded-tr-sm dark:bg-gray-700"
+              className="p-2 bg-blue-200  dark:bg-blue-700 rounded-xl rounded-tr-sm "
               onClick={_handleOpenForm}
             >
               Lorem Ipsum has been the industry's standard dummy text ever since
@@ -31,7 +31,7 @@ export default function FirstCustomerMessage({ _handleOpenForm }) {
             </button>
             <button
               id="3"
-              className="p-2 border-gray-200 bg-gray-200 rounded-xl rounded-tr-sm dark:bg-gray-700"
+              className="p-2 bg-blue-200  dark:bg-blue-700 rounded-xl rounded-tr-sm"
               onClick={_handleOpenForm}
             >
               temsilciye bağlan
