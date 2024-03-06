@@ -1,4 +1,3 @@
-import ChatComponent from "./Deneme";
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
@@ -6,38 +5,37 @@ import logo from "./images/642bf9a0bcb92.jpg";
 import FirstCustomerMessage from "./FirstCustomerMessage";
 import InputForm from "./InputForm";
 import SupportPanelHead from "./SupportPanelHead";
-import io from "socket.io-client";
-import { socket } from "./socket";
+import { io } from "socket.io-client";
+
+const URL = "http://localhost:3005";
 
 const LiveSupport = () => {
+  const [socket, setSocket] = useState(null);
   const [formVisible, setFormVisible] = useState(false);
   const [alertButtonGroupHover, setAlertButtonGroupHover] = useState(false);
   const [supportOn, setSupportOn] = useState(false);
   const [alerButtonHide, setAlerButtonHide] = useState(false);
   const [textareaReadonly, setTextareaReadonly] = useState(true);
   const [customerMessages, setCustomerMessages] = useState([]);
-  //const [supportAgentMessages, setSupportAgentMessages] = useState([]);
+  const [supportAgentMessages, setSupportAgentMessages] = useState([]);
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    // Sunucu adresini ayarlayın (sunucu adresinize göre değiştirin)
-    const socket = io("http://localhost:3000/");
+    const socket = io.connect(URL, { transports: ["websocket"] });
+    setSocket(socket);
 
-    // Server'dan alınan mesajları dinle
     socket.on("message", (data) => {
-      console.log("Serverdan mesaj alındı:", data);
-    });
-
-    // Server'dan alınan özel mesajları dinle
-    socket.on("serverMessage", (data) => {
-      console.log("Serverdan özel mesaj alındı:", data);
+      setSupportAgentMessages((prevMessages) => [
+        ...prevMessages,
+        { text: data.message, time: new Date() },
+      ]);
     });
 
     // Bağlantı kurulduğunda
     socket.on("connect", () => {
-      console.log("Bağlantı kuruldu");
+      console.log("Bağlantı kuruldu", socket);
     });
 
     // Bağlantı kapatıldığında
@@ -55,13 +53,6 @@ const LiveSupport = () => {
       socket.disconnect();
     };
   }, []);
-
-  const handleSendMessage = () => {
-    if (message.trim() !== "") {
-      socket.emit("message", message);
-      setMessage("");
-    }
-  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -98,67 +89,31 @@ const LiveSupport = () => {
     }
   };
 
-  // const handleSendMessage = () => {
-  //   if (message.trim() !== "") {
-  //     socket.emit("message", message);
-  //     setCustomerMessages((prevMessages) => [
-  //       ...prevMessages,
-  //       { text: message, time: new Date() },
-  //     ]);
-  //     setMessage("");
-  //   }
-  // };
+  const handleSendMessage = () => {
+    if (message.trim() !== "") {
+      socket.emit("message", { id: socket.id, date: Date.now(), message });
+      setCustomerMessages((prevMessages) => [
+        ...prevMessages,
+        { text: message, time: new Date() },
+      ]);
+      setMessage("");
+    }
+  };
 
   const handleInputChange = (event) => {
     setMessage(event.target.value);
   };
 
-  const sendMessage = () => {
-    console.log("Button clicked");
-    socket.emit("send_message", { message: "Hello from client" });
-  };
-
-  const [isConnected, setIsConnected] = useState(false);
-  const [fooEvents, setFooEvents] = useState([]);
-
-  useEffect(() => {
-    function onConnect() {
-      setIsConnected(true);
-    }
-
-    function onDisconnect() {
-      setIsConnected(false);
-    }
-
-    function onFooEvent(value) {
-      setFooEvents((previous) => [...previous, value]);
-    }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("foo", onFooEvent);
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("foo", onFooEvent);
-    };
-  }, []);
-  function connect() {
-    socket.connect();
-  }
-
-  function disconnect() {
-    socket.disconnect();
+  const test = () => {
+    socket.emit("request", { id: socket.id, date: Date.now(), message: 'temsilci' });
   }
 
   return (
     <div className="  ">
-      <div className="supportDiv  flex  right-0">
+      <div className="supportDiv  flex  right-0 ">
         <div
-          className={`${
-            supportOn ? "block" : "hidden"
-          }   support flex flex-col relative h-screen w-screen right-0 `}
+          className={`${supportOn ? "block" : "hidden"
+            }   support flex flex-col relative h-screen w-screen right-0 `}
         >
           <SupportPanelHead setSupportOn1={handleSupportOf}></SupportPanelHead>
 
@@ -167,17 +122,17 @@ const LiveSupport = () => {
               <img className="w-8 h-8 rounded-full" src={logo} alt="logo" />
               <div className="flex flex-col w-full max-w-[320px] p-4 border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-white">
                     ARİS888
                   </span>
-                  <span className="text-sm font-normal text-gray-500">
+                  <span className="text-sm font-normal text-white">
                     {currentTime.toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
-                    })}
+                    })} 
                   </span>
                 </div>
-                <p className="text-sm font-normal py-2.5 text-gray-900">
+                <p className="text-sm font-normal py-2.5 text-white ">
                   Merhaba Size nasıl yardımcı olabilirim?
                 </p>
               </div>
@@ -190,9 +145,8 @@ const LiveSupport = () => {
 
           <div
             id="temsilci-mesajı-2"
-            className={`p-6 w-full flex justify-start  ${
-              formVisible ? "" : "hidden"
-            }`}
+            className={`p-6 w-full flex justify-start  ${formVisible ? "" : "hidden"
+              }`}
           >
             <div className="flex items-start gap-3">
               <img className="w-8 h-8 rounded-full" src={logo} alt="logo" />
@@ -208,7 +162,7 @@ const LiveSupport = () => {
                     className="p-6 flex justify-end "
                   >
                     <span
-                      className="p-2 border-gray-200 bg-gray-200 rounded-xl rounded-tr-sm dark:bg-gray-700"
+                      className="p-2 text-white border-gray-200 bg-gray-200 rounded-xl rounded-tr-sm dark:bg-gray-700"
                       key={index}
                     >
                       {_customerMessage.text}
@@ -218,14 +172,14 @@ const LiveSupport = () => {
                     id="supportLiveChatMessages"
                     className="flex justify-start p-6"
                   >
-                    <span className="p-2 border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700">
-                      sunucusupportmesssage
+                    <span className="p-2  text-white border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700">
+                      {supportAgentMessages[index]?.text}
                     </span>
                   </div>
                 </div>
               ))}
               <div className="p-6 flex justify-center">
-                <button className=" p-2 border-gray-200 bg-gray-200 rounded-xl  dark:bg-gray-700">
+                <button onClick={test} className=" p-2 border-gray-200 bg-gray-200 rounded-xl  dark:bg-gray-700">
                   Canlı Temsilciyle görüşmek için tıklayınız
                 </button>
               </div>
@@ -252,9 +206,8 @@ const LiveSupport = () => {
       </div>
 
       <div
-        className={`${
-          alerButtonHide ? "hidden" : "block"
-        }  fixed flex flex-col justify-center  gap-6
+        className={`${alerButtonHide ? "hidden" : "block"
+          }  fixed flex flex-col justify-center  gap-6
         bottom-10 right-10
        text-2xl  font-CircularSpExtraBold
        p-5
@@ -264,9 +217,8 @@ const LiveSupport = () => {
         onMouseLeave={() => setAlertButtonGroupHover(false)}
       >
         <div
-          className={`flex flex-col p-2 gap-2 ${
-            alertButtonGroupHover ? "block" : "hidden"
-          }`}
+          className={`flex flex-col p-2 gap-2 ${alertButtonGroupHover ? "block" : "hidden"
+            }`}
         >
           <button className="p-4 bg-slate-500 rounded-xl">WhatsApp</button>
           <button
@@ -283,11 +235,6 @@ const LiveSupport = () => {
           >
             Müşteri Temsilcilerimiz Online
           </span>
-        </div>
-        <div className="App">
-          <ChatComponent></ChatComponent>
-          <button onClick={isConnected}>send mesaj</button>
-          <button onClick={connect}>Connect</button>
         </div>
       </div>
     </div>
