@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function InputForm({ _handleReadonly }) {
+export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -19,6 +19,12 @@ export default function InputForm({ _handleReadonly }) {
     e.preventDefault();
     // Form verilerini kullanarak istediğiniz işlemleri gerçekleştirebilirsiniz
     console.log("Form Gönderildi:", formData);
+
+    // Müşteri bilgilerini güncelle
+    updateCustomerInfo(formData);
+
+    // Readonly durumunu ayarla
+    _handleReadonly();
   };
 
   const isFormValid =

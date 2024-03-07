@@ -4,6 +4,10 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import logo from "./images/642bf9a0bcb92.jpg";
 import FirstCustomerMessage from "./FirstCustomerMessage";
 import InputForm from "./InputForm";
+import LiveChat from "./LiveChat";
+//import Customer from "./customerComp";
+import customerMessageStore from "./Store";
+
 import SupportPanelHead from "./SupportPanelHead";
 import { io } from "socket.io-client";
 
@@ -16,12 +20,20 @@ const LiveSupport = () => {
   const [supportOn, setSupportOn] = useState(false);
   const [alerButtonHide, setAlerButtonHide] = useState(false);
   const [textareaReadonly, setTextareaReadonly] = useState(true);
-  const [customerMessages, setCustomerMessages] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const [supportAgentMessages, setSupportAgentMessages] = useState([]);
 
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [message, setMessage] = useState("");
+  const [liveChat, setLiveChat] = useState(false);
 
+  // zustand liste
+  //const [customerMessages, setCustomerMessages] = useState([]);
+  const { customerMessages, addCustomerMessage } = customerMessageStore();
+  // İnput form ile aldığımız müşteri bilgileri
+  const [customerInfo, setCustomerInfo] = useState(null);
+  const handleUpdateCustomerInfo = (info) => {
+    setCustomerInfo(info);
+  };
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
     setSocket(socket);
@@ -54,6 +66,7 @@ const LiveSupport = () => {
     };
   }, []);
 
+  // datetime fonk
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
@@ -88,28 +101,29 @@ const LiveSupport = () => {
       handleSendMessage();
     }
   };
-
   const handleSendMessage = () => {
+    console.log("mesaj eklendi" + message + customerMessages);
     if (message.trim() !== "") {
       socket.emit("message", { id: socket.id, date: Date.now(), message });
-      setCustomerMessages((prevMessages) => [
-        ...prevMessages,
-        { text: message, time: new Date() },
-      ]);
+      addCustomerMessage({ text: message, time: new Date() });
+      console.log("mesaj eklendi" + message + customerMessages);
+
       setMessage("");
     }
   };
-
-  const handleInputChange = (event) => {
-    setMessage(event.target.value);
-  };
+  // const handleInputChange = (event) => {
+  //   setMessage(event.target.value);
+  // };
 
   const test = () => {
+    setLiveChat(true);
+
     socket.emit("request", {
       id: socket.id,
       date: Date.now(),
       message: "temsilci",
     });
+    console.log(liveChat);
   };
 
   return (
@@ -157,10 +171,14 @@ const LiveSupport = () => {
             <div className="flex items-start gap-3">
               <img className="w-8 h-8 rounded-full" src={logo} alt="logo" />
             </div>{" "}
-            <InputForm _handleReadonly={handleReadonly}></InputForm>
+            <InputForm
+              updateCustomerInfo={handleUpdateCustomerInfo}
+              _handleReadonly={handleReadonly}
+            ></InputForm>
           </div>
           {customerMessages.length > 0 && (
             <div>
+              {console.log("if e girdi kontrol")}
               {customerMessages.map((_customerMessage, index) => (
                 <div key={index}>
                   <div
@@ -182,9 +200,11 @@ const LiveSupport = () => {
                       <span className=" text-gray-500 text-sm">
                         Yapay Zeka Müşteri Temsilcisi
                       </span>
-                      <span className="p-2  text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
-                        {supportAgentMessages[index]?.text}
-                      </span>
+                      {supportAgentMessages[index] && (
+                        <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
+                          {supportAgentMessages[index].text}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -200,22 +220,39 @@ const LiveSupport = () => {
             </div>
           )}
 
-          <div className="textbox static flex bottom-0 right-0 left-0 p-2 ">
-            <textarea
-              onChange={handleInputChange}
-              onKeyPress={handleEnterKeyPress}
-              value={message}
-              readOnly={textareaReadonly}
-              className="w-full h-16 p-2 border border-gray-300 rounded-md"
-              placeholder="Mesajınızı buraya yazın..."
-            ></textarea>{" "}
-            <FontAwesomeIcon
-              className="absolute right-2 p-4 size-6"
-              onClick={handleSendMessage}
-              icon={faPaperPlane}
-              style={{ cursor: "pointer", marginLeft: "5px" }}
-            />
-          </div>
+          {/* canlı iletişime geçiyoruz*/}
+
+          {liveChat && (
+            <div>
+              {" "}
+              {console.log(liveChat)}
+              {/* İçerik buraya gelecek */}
+              <LiveChat
+                _customerInfo={customerInfo}
+                _handleSendMessage={handleSendMessage}
+                socket={socket}
+              ></LiveChat>
+            </div>
+          )}
+
+          {!liveChat && (
+            <div className="textbox static flex bottom-0 right-0 left-0 p-2">
+              <textarea
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleEnterKeyPress}
+                value={message}
+                readOnly={textareaReadonly}
+                className="w-full h-16 p-2 border border-gray-300 rounded-md"
+                placeholder="Mesajınızı buraya yazın..."
+              ></textarea>
+              <FontAwesomeIcon
+                className="absolute right-2 p-4 size-6"
+                onClick={handleSendMessage}
+                icon={faPaperPlane}
+                style={{ cursor: "pointer", marginLeft: "5px" }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -225,8 +262,7 @@ const LiveSupport = () => {
         }  fixed flex flex-col justify-center  gap-6
         bottom-10 right-10
        text-2xl  font-CircularSpExtraBold
-       p-5
-       
+       p-5       
        `}
         onMouseEnter={() => setAlertButtonGroupHover(true)}
         onMouseLeave={() => setAlertButtonGroupHover(false)}
@@ -249,8 +285,8 @@ const LiveSupport = () => {
         </div>
         <div>
           <span
-            className={`p-7 bg-gradient-to-r from-cyan-500 to-blue-500 bg-neutral-700 rounded-xl
-          font-CircularSpExtraBold  `}
+            className="p-7 bg-gradient-to-r from-cyan-500 to-blue-500 bg-neutral-700 rounded-xl
+          font-CircularSpExtraBold"
           >
             Müşteri Temsilcilerimiz Online
           </span>
