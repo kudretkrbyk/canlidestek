@@ -57,11 +57,25 @@ io.on("connection", (socket) => {
   });
   socket.on("Livemessage", async (data) => {
     console.log("liveChat dn gelen msaj" + data.message);
+
+    // Diğer işlemlerinizi gerçekleştirebilirsiniz.
+
+    // Gelen mesajı yayınla
+    io.emit("Livemessage", {
+      id: socket.id,
+      date: Date.now(),
+      message: data.message,
+    });
   });
-  socket.emit("Livemessage", {
-    id: socket.id,
-    date: Date.now(),
-    message: "live destek mesajı",
+  socket.on("supportLiveChat", async (data) => {
+    console.log("supportliveChat dn gelen msaj" + data.message);
+
+    // Gelen mesajı yayınla
+    io.emit("supportLiveChat", {
+      id: socket.id,
+      date: Date.now(),
+      message: data.message,
+    });
   });
 });
 
