@@ -1,10 +1,27 @@
 import React, { useState } from "react";
+import customerMessageStore from "./Store";
 
 export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
+  const roomId = Math.floor(Math.random() * 1000) + 1;
+  const customerId = Math.floor(Math.random() * 1000) + 1;
+
+  const {
+    setCustomerInfo,
+    customerInfo,
+    customerWaitingList,
+
+    setRoomIdList,
+    roomIdList,
+  } = customerMessageStore();
+  const { setCustomerWaitingList } = customerMessageStore((state) => ({
+    setCustomerWaitingList: state.setCustomerWaitingList,
+  }));
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phoneNumber: "",
+    roomId,
+    customerId,
   });
 
   const handleChange = (e) => {
@@ -17,21 +34,63 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Form verilerini kullanarak istediğiniz işlemleri gerçekleştirebilirsiniz
-    console.log("Form Gönderildi:", formData);
 
-    // Müşteri bilgilerini güncelle
-    updateCustomerInfo(formData);
+    // Rastgele roomId ve customerId oluştur
+    const newRoomId = Math.floor(Math.random() * 1000) + 1;
+    const newCustomerId = Math.floor(Math.random() * 1000) + 1;
+
+    // Yeni müşteri bilgisi
+    const newCustomerInfo = {
+      roomId: newRoomId,
+      customerId: newCustomerId,
+      userName: formData.name,
+    };
+
+    // WaitingCustomerList'e yeni bilgiyi ekleyin
+    // Daha önce tanımlanan setCustomerWaitingList fonksiyonunu kullanıyoruz
+
+    // CustomerInfo'yu temizle ve yeni müşteri bilgisini customerInfo'ya ekleyin
+    setCustomerInfo(newCustomerInfo);
+    // setRoomIdList(newCustomerInfo);
+    setRoomIdList({
+      customerId: newCustomerInfo.customerId,
+      roomId: newCustomerInfo.roomId,
+      userName: newCustomerInfo.userName,
+    });
+
+    console.log("room ıd List", roomIdList);
+    // setCustomerWaitingList({
+    //   customerId: newCustomerInfo.customerId,
+    //   roomId: newCustomerInfo.roomId,
+    //   userName: newCustomerInfo.userName,
+    // });
+    setCustomerWaitingList(newCustomerInfo);
+
+    console.log("Güncellenmiş customerWaitingList:", customerWaitingList);
+    console.log("Yeni eklenen veri:", newCustomerInfo);
 
     // Readonly durumunu ayarla
     _handleReadonly();
+
+    // Form verilerini temizle
+    setFormData({
+      name: "",
+      email: "",
+      phoneNumber: "",
+      roomId: Math.floor(Math.random() * 1000) + 1, // Yeni bir roomId oluştur
+      customerId: Math.floor(Math.random() * 1000) + 1, // Yeni bir customerId oluştur
+    });
   };
 
   const isFormValid =
     formData.name !== "" &&
     formData.email !== "" &&
     formData.phoneNumber !== "";
-
+  // Güncellenmiş customerWaitingList değerini yazdır
+  console.log(
+    "Güncellenmiş customerWaitingListsdvsdgsdv:",
+    customerWaitingList
+  );
   return (
     <div>
       <div

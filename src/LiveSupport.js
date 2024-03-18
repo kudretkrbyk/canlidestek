@@ -30,7 +30,9 @@ const LiveSupport = () => {
 
   // zustand liste
   //const [customerMessages, setCustomerMessages] = useState([]);
-  const { customerMessages, addCustomerMessage } = customerMessageStore();
+  const { customerMessages, addCustomerMessage, customerWaitingList } =
+    customerMessageStore();
+  console.log("burasi livesupport bileşeni", customerWaitingList);
   // İnput form ile aldığımız müşteri bilgileri
   const [customerInfo, setCustomerInfo] = useState(null);
   const handleUpdateCustomerInfo = (info) => {
@@ -121,7 +123,7 @@ const LiveSupport = () => {
     setLiveChat(true);
 
     socket.emit("request", {
-      id: socket.id,
+      id: socket.id, //customerId'si oluşuyor.
       date: Date.now(),
       message: "temsilci",
     });

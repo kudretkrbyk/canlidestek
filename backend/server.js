@@ -56,15 +56,18 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("Livemessage", async (data) => {
-    console.log("liveChat dn gelen msaj" + data.message);
+    console.log("liveChat dn gelen msaj" + data.userName);
 
     // Diğer işlemlerinizi gerçekleştirebilirsiniz.
 
     // Gelen mesajı yayınla
     io.emit("Livemessage", {
       id: socket.id,
+      sender: "customer",
       date: Date.now(),
       message: data.message,
+      userName: data.userName,
+      roomId: data.roomId,
     });
   });
   socket.on("supportLiveChat", async (data) => {
@@ -73,9 +76,12 @@ io.on("connection", (socket) => {
     // Gelen mesajı yayınla
     io.emit("supportLiveChat", {
       id: socket.id,
+      sender: "support",
       date: Date.now(),
       message: data.message,
+      userName: data.userName,
     });
+    console.log(data.userName);
   });
 });
 
