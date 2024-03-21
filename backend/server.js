@@ -1,3 +1,8 @@
+const getAllCustomers = require("./functions/getAllCustomers");
+const sendCustomer = require("./functions/sendCustomer");
+const sendCustomerUpdateRequest = require("./functions/selectedCustomer");
+const sendLoginRequest = require("./functions/logIn");
+
 let customerList = [];
 
 const express = require("express");
@@ -82,6 +87,60 @@ io.on("connection", (socket) => {
       userName: data.userName,
     });
     console.log(data.userName);
+  });
+
+  socket.on("formData", async (data) => {
+    console.log("formdata", data);
+    try {
+      // Form verilerini API'ye gönder
+      const responseData = await sendCustomer(data);
+      return responseData;
+    } catch (error) {
+      console.error("Error while sending data to API:", error);
+    }
+  });
+
+  async function allCustomers() {
+    try {
+      const allCustomers = await getAllCustomers();
+      console.log("All customers:", allCustomers);
+      io.emit("allCustomers", {
+        id: allCustomers.id,
+        name: allCustomers.name,
+        email: allCustomers.email,
+        phone: allCustomers.phone,
+        roomId: allCustomers.roomId,
+        supporterId: allCustomers.supporterId,
+        status: allCustomers.status,
+      });
+    } catch (error) {
+      console.error("Error while fetching customers:", error);
+    }
+  }
+
+  // main fonksiyonunu çağırarak işlemi başlatın
+  allCustomers();
+
+  socket.on("selectedCustomer", async (data) => {
+    console.log("seçilen müşteri", data);
+    // gelen bilgiler
+    const { customerId, supporterId, status } = data;
+    // API isteği gönder
+    await sendCustomerUpdateRequest(customerId, supporterId, status);
+  });
+
+  socket.on("logIn", async (data) => {
+    try {
+      const { email, password } = data;
+
+      // Login isteğini yap
+      const loginResponse = await sendLoginRequest(email, password);
+
+      // Login yanıtını emit et
+      socket.emit("logIn", loginResponse);
+    } catch (error) {
+      console.error("Error during login:", error);
+    }
   });
 });
 

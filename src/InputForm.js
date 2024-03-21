@@ -1,27 +1,42 @@
 import React, { useState } from "react";
-import customerMessageStore from "./Store";
+
+import { io } from "socket.io-client";
+import { useEffect } from "react";
+const URL = "http://localhost:3005";
 
 export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
+  const [socket, setSocket] = useState(null);
+  useEffect(() => {
+    const socket = io.connect(URL, { transports: ["websocket"] });
+    setSocket(socket);
+
+    socket.on("connect", () => {
+      console.log("Bağlantı kuruldu", socket);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Bağlantı kapatıldı");
+    });
+
+    socket.on("error", (error) => {
+      console.error("Hata:", error);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
   const roomId = Math.floor(Math.random() * 1000) + 1;
   const customerId = Math.floor(Math.random() * 1000) + 1;
 
-  const {
-    setCustomerInfo,
-    customerInfo,
-    customerWaitingList,
-
-    setRoomIdList,
-    roomIdList,
-  } = customerMessageStore();
-  const { setCustomerWaitingList } = customerMessageStore((state) => ({
-    setCustomerWaitingList: state.setCustomerWaitingList,
-  }));
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phoneNumber: "",
     roomId,
     customerId,
+    //status: 1,
   });
 
   const handleChange = (e) => {
@@ -32,53 +47,17 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Rastgele roomId ve customerId oluştur
-    const newRoomId = Math.floor(Math.random() * 1000) + 1;
-    const newCustomerId = Math.floor(Math.random() * 1000) + 1;
+    // Form verilerini al
+    const { name, email, phoneNumber, status } = formData;
 
-    // Yeni müşteri bilgisi
-    const newCustomerInfo = {
-      roomId: newRoomId,
-      customerId: newCustomerId,
-      userName: formData.name,
-    };
-
-    // WaitingCustomerList'e yeni bilgiyi ekleyin
-    // Daha önce tanımlanan setCustomerWaitingList fonksiyonunu kullanıyoruz
-
-    // CustomerInfo'yu temizle ve yeni müşteri bilgisini customerInfo'ya ekleyin
-    setCustomerInfo(newCustomerInfo);
-    // setRoomIdList(newCustomerInfo);
-    setRoomIdList({
-      customerId: newCustomerInfo.customerId,
-      roomId: newCustomerInfo.roomId,
-      userName: newCustomerInfo.userName,
-    });
-
-    console.log("room ıd List", roomIdList);
-    // setCustomerWaitingList({
-    //   customerId: newCustomerInfo.customerId,
-    //   roomId: newCustomerInfo.roomId,
-    //   userName: newCustomerInfo.userName,
-    // });
-    setCustomerWaitingList(newCustomerInfo);
-
-    console.log("Güncellenmiş customerWaitingList:", customerWaitingList);
-    console.log("Yeni eklenen veri:", newCustomerInfo);
-
-    // Readonly durumunu ayarla
-    _handleReadonly();
-
-    // Form verilerini temizle
-    setFormData({
-      name: "",
-      email: "",
-      phoneNumber: "",
-      roomId: Math.floor(Math.random() * 1000) + 1, // Yeni bir roomId oluştur
-      customerId: Math.floor(Math.random() * 1000) + 1, // Yeni bir customerId oluştur
+    socket.emit("formData", {
+      name: String(name),
+      email: String(email),
+      phoneNumber: String(phoneNumber),
+      status: String(status),
     });
   };
 
@@ -87,10 +66,7 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
     formData.email !== "" &&
     formData.phoneNumber !== "";
   // Güncellenmiş customerWaitingList değerini yazdır
-  console.log(
-    "Güncellenmiş customerWaitingListsdvsdgsdv:",
-    customerWaitingList
-  );
+
   return (
     <div>
       <div
@@ -147,6 +123,7 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
               id="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
+              placeholder="Telefon Numaranız*"
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               required
             />

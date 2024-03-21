@@ -10,14 +10,10 @@ const URL = "http://localhost:3005";
 export default function SupportLiveChat({ _customerWaitingList }) {
   const [message, setMessage] = useState("");
   const [socket, setSocket] = useState(null);
-  const {
-    addSupportAgentMessages,
-    liveChatList,
-    addLiveChatList,
-    selectedCustomer,
-    supportId,
-    customerWaitingList,
-  } = customerMessageStore();
+  const { addSupportAgentMessages, liveChatList, addLiveChatList } =
+    customerMessageStore();
+  const [supporterId, setSupporterId] = useState(null);
+  const [roomId, setRoomId] = useState(null);
 
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
@@ -59,6 +55,12 @@ export default function SupportLiveChat({ _customerWaitingList }) {
           time: new Date(data.date),
           userName: data.userName,
         });
+        socket.on("logIn", (response) => {
+          setSupporterId(response.id);
+        });
+        socket.on("selectedCustomer", (data) => {
+          setRoomId(data.roomId);
+        });
       });
     }
   }, [socket, addLiveChatList]);
@@ -76,64 +78,65 @@ export default function SupportLiveChat({ _customerWaitingList }) {
       //const userName = "support";
       //const id = socket.id;
       socket.emit("supportLiveChat", {
-        supportId,
+        supporterId,
         date: Date.now(),
         message,
         sender,
         userName: "?",
-        roomId: selectedCustomer.roomId,
+        roomId,
       });
       addLiveChatList({
-        supportId,
+        supporterId,
         sender,
         content: message,
         time: new Date(),
         userName: "?",
-        roomId: selectedCustomer.roomId,
+        roomId,
       });
 
       setMessage("");
     }
   };
-  useEffect(() => {
-    console.log("customerWaitingList güncellendi:", customerWaitingList);
-    console.log("___customerWaitingList güncellendi:", _customerWaitingList);
-    // customerWaitingList değiştiğinde burada ek işlemler yapabilirsiniz, eğer gerekirse
-  }, [customerWaitingList]);
 
   console.log("liste içeriği livechatlist111", liveChatList);
 
   const sortedMessages = liveChatList.sort((a, b) => a.time - b.time);
   return (
     <div>
-      {sortedMessages.map((message, index) => (
-        <div key={index}>
-          {message.sender === "customer" ? (
-            <div id="customerLiveChatMessages" className="p-6 flex justify-end">
-              <span
-                className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
-                key={index}
+      <CustomerIdList></CustomerIdList>
+      {sortedMessages
+        .filter((message) => message.roomId === roomId)
+        .map((message, index) => (
+          <div key={index}>
+            {message.sender === "customer" ? (
+              <div
+                id="customerLiveChatMessages"
+                className="p-6 flex justify-end"
               >
-                {message.message}
-              </span>
-            </div>
-          ) : (
-            <div
-              id="supportLiveChatMessages"
-              className="flex justify-start p-6"
-            >
-              <div className="flex flex-col gap-3">
-                <span className="text-gray-500 text-sm">
-                  Müşteri Temsilcisi
-                </span>
-                <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
+                <span
+                  className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
+                  key={index}
+                >
                   {message.message}
                 </span>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            ) : (
+              <div
+                id="supportLiveChatMessages"
+                className="flex justify-start p-6"
+              >
+                <div className="flex flex-col gap-3">
+                  <span className="text-gray-500 text-sm">
+                    Müşteri Temsilcisi
+                  </span>
+                  <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
+                    {message.message}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
 
       <div className="textbox static flex bottom-0 right-0 left-0 p-2">
         <textarea

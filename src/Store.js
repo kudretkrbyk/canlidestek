@@ -78,13 +78,7 @@ const customerMessageStore = create((set) => ({
       ...state,
       supportId: newSupportId,
     })),
-  roomIdList: [], // roomId'leri içeren bir liste
-  setRoomIdList: (newRoomIdList) => set({ roomIdList: newRoomIdList }),
-  customerInfo: {
-    customerId: "",
-    roomId: "",
-    userName: "",
-  },
+
   setCustomerInfo: (newInfo) =>
     set((state) => ({
       customerInfo: { ...state.customerInfo, ...newInfo },

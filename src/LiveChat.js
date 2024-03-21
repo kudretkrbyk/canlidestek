@@ -4,14 +4,12 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import customerMessageStore from "./Store";
 
 const LiveChat = ({ _customerInfo, socket }) => {
-  const {
-    liveChatList,
-    addLiveChatList,
-    customerInfo,
-    selectedCustomer,
-    supportId,
-  } = customerMessageStore();
+  const { liveChatList, addLiveChatList, customerInfo } =
+    customerMessageStore();
   const [message, setMessage] = useState("");
+  const [roomId, setRoomId] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [supporterId, setSupporterId] = useState(null);
 
   const handleEnterKeyPress = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -25,23 +23,23 @@ const LiveChat = ({ _customerInfo, socket }) => {
       const sender = "customer";
 
       socket.emit("Livemessage", {
-        id: selectedCustomer.customerId,
-        supportId,
+        id: selectedCustomer,
+        supporterId,
         date: Date.now(),
         message,
         sender,
         userName: selectedCustomer.userName,
-        roomId: selectedCustomer.roomId,
+        roomId: roomId,
       });
 
       addLiveChatList({
-        id: selectedCustomer.customerId,
-        supportId,
+        id: selectedCustomer,
+        supporterId,
+        date: Date.now(),
+        message,
         sender,
-        content: message,
-        time: new Date(),
         userName: selectedCustomer.userName,
-        roomId: selectedCustomer.roomId,
+        roomId: roomId,
       });
 
       setMessage("");
@@ -58,6 +56,13 @@ const LiveChat = ({ _customerInfo, socket }) => {
           content: data.message,
           time: new Date(data.date),
           userName: data.userName,
+        });
+        socket.on("selectedCustomer", (data) => {
+          setRoomId(data.roomId);
+          setSelectedCustomer(data.customerId);
+        });
+        socket.on("logIn", (response) => {
+          setSupporterId(response.id);
         });
       });
     }
@@ -81,34 +86,39 @@ const LiveChat = ({ _customerInfo, socket }) => {
           </span>
         </div>
       </div>
-      {sortedMessages.map((message, index) => (
-        <div key={index}>
-          {message.sender === "customer" ? (
-            <div id="customerLiveChatMessages" className="p-6 flex justify-end">
-              <span
-                className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
-                key={index}
+      {sortedMessages
+        .filter((message) => message.roomId === roomId)
+        .map((message, index) => (
+          <div key={index}>
+            {message.sender === "customer" ? (
+              <div
+                id="customerLiveChatMessages"
+                className="p-6 flex justify-end"
               >
-                {message.message}
-              </span>
-            </div>
-          ) : (
-            <div
-              id="supportLiveChatMessages"
-              className="flex justify-start p-6"
-            >
-              <div className="flex flex-col gap-3">
-                <span className="text-gray-500 text-sm">
-                  Müşteri Temsilcisi
-                </span>
-                <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
+                <span
+                  className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
+                  key={index}
+                >
                   {message.message}
                 </span>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            ) : (
+              <div
+                id="supportLiveChatMessages"
+                className="flex justify-start p-6"
+              >
+                <div className="flex flex-col gap-3">
+                  <span className="text-gray-500 text-sm">
+                    Müşteri Temsilcisi
+                  </span>
+                  <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
+                    {message.message}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       <div className="textbox static flex bottom-0 right-0 left-0 p-2">
         <textarea
           onChange={(e) => setMessage(e.target.value)}

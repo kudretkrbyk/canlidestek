@@ -2,68 +2,103 @@ import React from "react";
 import customerMessageStore from "./Store";
 import { useState } from "react";
 import { useEffect } from "react";
+import { io } from "socket.io-client";
 
-export default function CustomerIdList({ _customerWaitingList }) {
+export default function CustomerIdList() {
+  const [socket, setSocket] = useState(null);
+  const [supporterId, setSupporterId] = useState(null);
+
   useEffect(() => {
-    console.log("customerWaitingList güncellendi:", _customerWaitingList);
+    const socket = io.connect(URL, { transports: ["websocket"] });
+    setSocket(socket);
 
-    // customerWaitingList değiştiğinde burada ek işlemler yapabilirsiniz, eğer gerekirse
-  }, [_customerWaitingList]);
+    socket.on("connect", () => {
+      console.log("Bağlantı kuruldu", socket);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Bağlantı kapatıldı");
+    });
+
+    socket.on("error", (error) => {
+      console.error("Hata:", error);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("allCustomers", (data) => {
+        console.log("Mesaj geldi", data);
+        // Assuming data contains id, name, email, roomId, supporterId, and status properties
+        const { id, name, email, roomId, supporterId, status } = data;
+        // Update waitingCustomerList with the new customer data
+        //Status değerini görmek için aldık çalışıyorsa alınmasında gerek yok.
+
+        setCustomerWaitingList((prevList) => [
+          ...prevList.filter((customer) => customer.status === 1),
+          { id, name, email, roomId, supporterId, status },
+        ]);
+      });
+      socket.on("logIn", (response) => {
+        setSupporterId(response.id);
+      });
+      socket.on("selectedCustomer", (data) => {
+        ////?????
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("allCustomers");
+      }
+    };
+  }, []);
+  // customerWaitingList değiştiğinde burada ek işlemler yapabilirsiniz, eğer gerekirse
+
   const {
-    customerMatchId,
-    addCustomerMatch,
-    customerInfo,
-
     setCustomerWaitingList,
-    selectedCustomer,
-    setSelectedCustomer,
-    liveCustomerMessages,
+
+    customerWaitingList,
   } = customerMessageStore();
-
-  const [supportId] = useState(1);
-
-  useEffect(() => {
-    console.log("customerWaitingList güncellendi:", _customerWaitingList);
-
-    // customerWaitingList değiştiğinde burada ek işlemler yapabilirsiniz, eğer gerekirse
-  }, [_customerWaitingList]);
+  const [selectedCustomerFrontend, setSelectedCustomerFrontend] =
+    useState(null);
 
   const handleCustomerClick = (customerId) => {
     // Seçilen müşteriyi bul
-    const selected = _customerWaitingList.find(
+    const selected = customerWaitingList.find(
       (customer) => customer.id === customerId
     );
     if (selected) {
       // Seçilen müşterinin roomId ve customerId bilgilerini sakla
-      selectedCustomer([]);
-      setSelectedCustomer({
-        roomId: selected.roomId,
-        customerId: customerId,
-        userName: selected.userName,
+      selectedCustomerFrontend([]);
+      const randomRoomId = Math.floor(Math.random() * 10000);
+      setSelectedCustomerFrontend({
+        id: selected.id,
+        supporterId: supporterId,
+        status: 0,
+        name: selected.name,
+        email: selected.email,
+        phone: selected.phone,
+        roomId: randomRoomId,
       });
-
-      // Seçilen müşteriyi waitingCustomerList'ten sil
-      const updatedList = _customerWaitingList.filter(
-        (customer) => customer.id !== customerId
-      );
-      setCustomerWaitingList(updatedList);
-
-      // Tıklanan customer'ın ID'sini kullanarak customerMatchId listesine ekle
-      addCustomerMatch({
-        customerId,
-        supportId: supportId,
-        roomId: 1,
+      socket.emit("selectedCustomer", {
+        selectedCustomerFrontend,
       });
+      setSelectedCustomerFrontend([]);
     }
   };
 
-  console.log("customerwaitinglis1111t", _customerWaitingList);
+  console.log("customerwaitinglis1111t", customerWaitingList);
 
   return (
     <div>
       <h2>Customer ID ve UserName'leri:</h2>
       <ul>
-        {_customerWaitingList.map((customer) => (
+        {customerWaitingList.map((customer) => (
           <li
             key={customer.customerId}
             onClick={() => handleCustomerClick(customer.customerId)}
