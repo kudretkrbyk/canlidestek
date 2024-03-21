@@ -1,5 +1,3 @@
-const fetch = require("node-fetch");
-
 // Login API'sine istek oluşturan fonksiyon
 async function sendLoginRequest(email, password) {
   try {

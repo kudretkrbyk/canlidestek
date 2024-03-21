@@ -1,5 +1,3 @@
-const fetch = require("node-fetch");
-
 async function sendCustomerUpdateRequest(customerId, updateData) {
   try {
     const response = await fetch(
