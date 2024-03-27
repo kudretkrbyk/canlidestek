@@ -24,15 +24,15 @@ const LiveSupport = () => {
   const [textareaReadonly, setTextareaReadonly] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [supportAgentMessages, setSupportAgentMessages] = useState([]);
+  //const [selectedCustomerUpdated, setSelectedCustomerUpdated] = useState(null);
+  const [selected, setSelected] = useState(false);
+  const [textAreaControl, setTextareaControl] = useState(true);
 
   const [message, setMessage] = useState("");
   const [liveChat, setLiveChat] = useState(false);
 
-  // zustand liste
-  //const [customerMessages, setCustomerMessages] = useState([]);
-  const { customerMessages, addCustomerMessage, customerWaitingList } =
-    customerMessageStore();
-  console.log("burasi livesupport bileşeni", customerWaitingList);
+  const { customerMessages, addCustomerMessage } = customerMessageStore();
+  //console.log("burasi livesupport bileşeni", customerWaitingList);
   // İnput form ile aldığımız müşteri bilgileri
   const [customerInfo, setCustomerInfo] = useState(null);
   const handleUpdateCustomerInfo = (info) => {
@@ -42,12 +42,16 @@ const LiveSupport = () => {
     const socket = io.connect(URL, { transports: ["websocket"] });
     setSocket(socket);
 
-    socket.on("message", (data) => {
-      setSupportAgentMessages((prevMessages) => [
-        ...prevMessages,
-        { text: data.message, time: new Date() },
-      ]);
-    });
+    socket.on(
+      "message",
+      (data) => {
+        setSupportAgentMessages((prevMessages) => [
+          ...prevMessages,
+          { text: data.message, time: new Date() },
+        ]);
+      },
+      []
+    );
 
     // Bağlantı kurulduğunda
     socket.on("connect", () => {
@@ -121,6 +125,7 @@ const LiveSupport = () => {
 
   const test = () => {
     setLiveChat(true);
+    setTextareaControl(true);
 
     socket.emit("request", {
       id: socket.id, //customerId'si oluşuyor.
@@ -129,6 +134,26 @@ const LiveSupport = () => {
     });
     console.log(liveChat);
   };
+  useEffect(() => {
+    if (socket) {
+      socket.on("selectedCustomer", (data) => {
+        setSelected(data.selected);
+      });
+    }
+  }, [socket, selected]);
+  //müşteri mesaj girişi ilk önce form doldurmalı, form dolu olduğunda canlı desteğe bağlanmak isterse
+  // destek personeli seçim yaptığında yazabilmeli.???
+  useEffect(() => {
+    if (liveChat && selected) {
+      console.log("if çalıtı");
+      setTextareaControl(false);
+    } else {
+      if (!textareaReadonly) {
+        console.log("if 22çalıtı");
+        setTextareaControl(false); // Bu durumda textarea kontrolünü kapat
+      }
+    }
+  }, [textareaReadonly]);
 
   return (
     <div className="  ">
@@ -182,7 +207,6 @@ const LiveSupport = () => {
           </div>
           {customerMessages.length > 0 && (
             <div>
-              {console.log("if e girdi kontrol")}
               {customerMessages.map((_customerMessage, index) => (
                 <div key={index}>
                   <div
@@ -229,7 +253,6 @@ const LiveSupport = () => {
           {liveChat && (
             <div>
               {" "}
-              {console.log(liveChat)}
               {/* İçerik buraya gelecek */}
               <LiveChat
                 _customerInfo={customerInfo}
@@ -245,9 +268,9 @@ const LiveSupport = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleEnterKeyPress}
                 value={message}
-                readOnly={textareaReadonly}
+                readOnly={textAreaControl}
                 className="w-full h-16 p-2 border border-gray-300 rounded-md"
-                placeholder="Mesajınızı buraya yazın..."
+                placeholder="Mesajınızı buraya yazın...canli görüşme"
               ></textarea>
               <FontAwesomeIcon
                 className="absolute right-2 p-4 size-6"

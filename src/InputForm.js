@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+//import customerMessageStore from "./Store";
 
 import { io } from "socket.io-client";
 import { useEffect } from "react";
@@ -34,9 +35,9 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
     name: "",
     email: "",
     phoneNumber: "",
-    roomId,
+    roomId: roomId,
     customerId,
-    //status: 1,
+    status: true,
   });
 
   const handleChange = (e) => {
@@ -58,6 +59,7 @@ export default function InputForm({ updateCustomerInfo, _handleReadonly }) {
       email: String(email),
       phoneNumber: String(phoneNumber),
       status: String(status),
+      roomId: roomId,
     });
   };
 

@@ -1,12 +1,20 @@
 import React from "react";
-import customerMessageStore from "./Store";
+
+import authStore from "./supporterIdStore";
 import { useState } from "react";
 import { useEffect } from "react";
+//import customerMessageStore from "./Store";
 import { io } from "socket.io-client";
+const URL = "http://localhost:3005";
 
-export default function CustomerIdList() {
+export default function CustomerIdList({ setSupportTextAreaInput }) {
   const [socket, setSocket] = useState(null);
-  const [supporterId, setSupporterId] = useState(null);
+
+  const [customerWaitingList, setCustomerWaitingList] = useState([]);
+  const [selectedCustomerFrontend, setSelectedCustomerFrontend] = useState();
+  const [setSelected] = useState(false);
+
+  const { supporterId } = authStore();
 
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
@@ -28,85 +36,72 @@ export default function CustomerIdList() {
       socket.disconnect();
     };
   }, []);
+  useEffect(() => {
+    if (socket) {
+      socket.on("log", (data) => {
+        console.log("************supporter id", data);
+      });
+    }
+  }, [socket]);
+  // console.log("store supporterI", supporterId);
 
   useEffect(() => {
     if (socket) {
       socket.on("allCustomers", (data) => {
-        console.log("Mesaj geldi", data);
-        // Assuming data contains id, name, email, roomId, supporterId, and status properties
-        const { id, name, email, roomId, supporterId, status } = data;
-        // Update waitingCustomerList with the new customer data
-        //Status değerini görmek için aldık çalışıyorsa alınmasında gerek yok.
-
-        setCustomerWaitingList((prevList) => [
-          ...prevList.filter((customer) => customer.status === 1),
-          { id, name, email, roomId, supporterId, status },
-        ]);
-      });
-      socket.on("logIn", (response) => {
-        setSupporterId(response.id);
-      });
-      socket.on("selectedCustomer", (data) => {
-        ////?????
+        console.log("Mesaj geldi all customers", data);
+        setCustomerWaitingList(data);
       });
     }
-
-    return () => {
-      if (socket) {
-        socket.off("allCustomers");
-      }
-    };
-  }, []);
-  // customerWaitingList değiştiğinde burada ek işlemler yapabilirsiniz, eğer gerekirse
-
-  const {
-    setCustomerWaitingList,
-
-    customerWaitingList,
-  } = customerMessageStore();
-  const [selectedCustomerFrontend, setSelectedCustomerFrontend] =
-    useState(null);
+  }, [socket]);
 
   const handleCustomerClick = (customerId) => {
-    // Seçilen müşteriyi bul
+    //setSelected(true);
+
     const selected = customerWaitingList.find(
       (customer) => customer.id === customerId
     );
+
     if (selected) {
-      // Seçilen müşterinin roomId ve customerId bilgilerini sakla
-      selectedCustomerFrontend([]);
-      const randomRoomId = Math.floor(Math.random() * 10000);
-      setSelectedCustomerFrontend({
+      setSupportTextAreaInput(false);
+      console.log("if selected");
+      const selectedUpdated = {
         id: selected.id,
-        supporterId: supporterId,
-        status: 0,
+        supporterId,
+        status: false,
         name: selected.name,
         email: selected.email,
         phone: selected.phone,
-        roomId: randomRoomId,
-      });
-      socket.emit("selectedCustomer", {
-        selectedCustomerFrontend,
-      });
-      setSelectedCustomerFrontend([]);
+        roomId: selected.roomId,
+        selected,
+      };
+
+      setSelectedCustomerFrontend(selectedUpdated);
     }
   };
+  useEffect(() => {
+    if (selectedCustomerFrontend) {
+      socket.emit("selectedCustomer", selectedCustomerFrontend);
+    }
+  }, [socket, selectedCustomerFrontend]);
 
-  console.log("customerwaitinglis1111t", customerWaitingList);
+  //console.log("customerwaitinglist", customerWaitingList);
+  //console.log("selectedCustomerFrontend", selectedCustomerFrontend);
 
   return (
     <div>
       <h2>Customer ID ve UserName'leri:</h2>
       <ul>
-        {customerWaitingList.map((customer) => (
-          <li
-            key={customer.customerId}
-            onClick={() => handleCustomerClick(customer.customerId)}
-            style={{ cursor: "pointer" }}
-          >
-            {`ID: ${customer.customerId}, UserName: ${customer.userName}`}
-          </li>
-        ))}
+        {customerWaitingList
+          .filter((customer) => customer.status === true)
+          .map((customer) => (
+            <li
+              key={customer.id}
+              onClick={() => handleCustomerClick(customer.id)}
+              style={{ cursor: "pointer" }}
+            >
+              {`ID: ${customer.id}, UserName: ${customer.name}`}
+            </li>
+          ))}
       </ul>
     </div>
   );

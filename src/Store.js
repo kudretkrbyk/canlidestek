@@ -25,11 +25,12 @@ const customerMessageStore = create((set) => ({
   liveChatList: [],
   addLiveChatList: (newMessage) =>
     set((state) => {
-      const { id, sender, content, time, userName, roomId } = newMessage;
+      const { supporterId, sender, content, time, userName, roomId } =
+        newMessage;
       const updatedLiveChatList = [
         ...state.liveChatList,
         {
-          id,
+          supporterId,
           sender,
           message: content,
           time,
@@ -62,14 +63,6 @@ const customerMessageStore = create((set) => ({
       customerMatchId: [...state.customerMatchId, newMatch],
     })),
 
-  supportId: 1, // Varsayılan olarak 1, ihtiyaca göre değiştirilebilir
-
-  // Yeni state'i güncelleyen fonksiyon
-  setSupportId: (newSupportId) =>
-    set((state) => ({
-      ...state,
-      supportId: newSupportId,
-    })),
   selectedCustomer: "", // Varsayılan olarak 1, ihtiyaca göre değiştirilebilir
 
   // Yeni state'i güncelleyen fonksiyon
@@ -89,6 +82,10 @@ const customerMessageStore = create((set) => ({
       ...state,
       customerWaitingList: [...state.customerWaitingList, newMessage],
     })),
+
+  roomId: null, //room ıd başlangıçta null
+
+  setRoomId: (roomId) => set({ roomId }), // room
 }));
 
 export default customerMessageStore;

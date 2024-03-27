@@ -1,33 +1,34 @@
 import React from "react";
 import { useState } from "react";
-const handleInputChange = (e) => {
-  const { name, value } = e.target;
-  setFormData((prevFormData) => ({
-    ...prevFormData,
-    [name]: value,
-  }));
-};
-const [formData, setFormData] = useState({
-  fullName: "",
-  email: "",
-  phone: "",
-});
-const handleSendMessage = () => {
-  // Burada mesaj gönderme işlemlerini gerçekleştirebilirsiniz
-  console.log("Mesaj gönderildi:", message);
-  console.log("Form verileri:", formData);
 
-  // Mesaj gönderildikten sonra state'leri sıfırlayabilirsiniz
-  setSupportOpen(false);
-  setMessage("");
-  setSelectedQuestions([]); // Soruları sıfırla
-  setFormData({
+export default function ContactForm() {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
+  };
+  const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
   });
-};
-export default function contactForm() {
+  const handleSendMessage = () => {
+    // Burada mesaj gönderme işlemlerini gerçekleştirebilirsiniz
+
+    console.log("Form verileri:", formData);
+
+    // Mesaj gönderildikten sonra state'leri sıfırlayabilirsiniz
+    //setSupportOpen(false);
+    //setMessage("");
+    //setSelectedQuestions([]); // Soruları sıfırla
+    setFormData({
+      fullName: "",
+      email: "",
+      phone: "",
+    });
+  };
   return (
     <div>
       <div className="mt-4">

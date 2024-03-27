@@ -1,22 +1,18 @@
-async function sendCustomer(data) {
+async function updateCustomer(data) {
   try {
-    // Form verilerini al
-    const { name, email, phoneNumber, status, roomId } = data;
-
+    const { id, status, supporterId } = data;
     // Verileri API'ye göndermek için bir HTTP isteği yapın
     const response = await fetch(
-      "https://aris888.io/api/help/customer/create",
+      "https://aris888.io/api/help/customer/update",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name,
-          email,
-          phone: phoneNumber,
+          id,
           status,
-          roomId,
+          supporterId,
         }),
       }
     );
@@ -31,4 +27,4 @@ async function sendCustomer(data) {
   }
 }
 
-module.exports = sendCustomer;
+module.exports = updateCustomer;

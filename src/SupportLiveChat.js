@@ -4,16 +4,20 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import customerMessageStore from "./Store";
 import CustomerIdList from "./customerIdList";
+import authStore from "./supporterIdStore";
 
 const URL = "http://localhost:3005";
 
-export default function SupportLiveChat({ _customerWaitingList }) {
+export default function SupportLiveChat() {
   const [message, setMessage] = useState("");
   const [socket, setSocket] = useState(null);
+  //const [ setSelected] = useState(false);
   const { addSupportAgentMessages, liveChatList, addLiveChatList } =
     customerMessageStore();
-  const [supporterId, setSupporterId] = useState(null);
-  const [roomId, setRoomId] = useState(null);
+
+  const { roomId, setRoomId } = customerMessageStore();
+  const [supportTextAreaInput, setSupportTextAreaInput] = useState(true);
+  const { supporterId, login } = authStore();
 
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
@@ -55,15 +59,15 @@ export default function SupportLiveChat({ _customerWaitingList }) {
           time: new Date(data.date),
           userName: data.userName,
         });
-        socket.on("logIn", (response) => {
-          setSupporterId(response.id);
-        });
+
         socket.on("selectedCustomer", (data) => {
           setRoomId(data.roomId);
+
+          console.log("**********seçilen müşterinin room İdsi", roomId);
         });
       });
     }
-  }, [socket, addLiveChatList]);
+  }, [socket, liveChatList, addLiveChatList]);
 
   const handleEnterKeyPress = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -71,6 +75,22 @@ export default function SupportLiveChat({ _customerWaitingList }) {
       handleSendMessage();
     }
   };
+  useEffect(() => {
+    if (socket) {
+      socket.on("log", (data) => {
+        login(data);
+        console.log("*****supporterID bileşeni ", supporterId);
+      });
+    }
+  }, [supporterId, login, socket]);
+  console.log("*****supporterID bileşeni1111111 ", supporterId);
+  useEffect(() => {
+    if (socket) {
+      socket.on("formData", (data) => {
+        setRoomId(data.roomId);
+      });
+    }
+  }, [socket, roomId]);
 
   const handleSendMessage = () => {
     if (message.trim() !== "" && socket) {
@@ -85,6 +105,7 @@ export default function SupportLiveChat({ _customerWaitingList }) {
         userName: "?",
         roomId,
       });
+      console.log("emit içinde supporterId", supporterId);
       addLiveChatList({
         supporterId,
         sender,
@@ -101,48 +122,48 @@ export default function SupportLiveChat({ _customerWaitingList }) {
   console.log("liste içeriği livechatlist111", liveChatList);
 
   const sortedMessages = liveChatList.sort((a, b) => a.time - b.time);
+
   return (
     <div>
-      <CustomerIdList></CustomerIdList>
-      {sortedMessages
-        .filter((message) => message.roomId === roomId)
-        .map((message, index) => (
-          <div key={index}>
-            {message.sender === "customer" ? (
-              <div
-                id="customerLiveChatMessages"
-                className="p-6 flex justify-end"
+      <CustomerIdList
+        setSupportTextAreaInput={setSupportTextAreaInput}
+        supportTextAreaInput={supportTextAreaInput}
+      />
+      {sortedMessages.map((message, index) => (
+        <div key={index}>
+          {message.sender === "customer" ? (
+            <div id="customerLiveChatMessages" className="p-6 flex justify-end">
+              <span
+                className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
+                key={index}
               >
-                <span
-                  className="p-2 text-white border-gray-200 rounded-xl rounded-tr-sm bg-blue-200 dark:bg-blue-700"
-                  key={index}
-                >
+                {message.message}
+              </span>
+            </div>
+          ) : (
+            <div
+              id="supportLiveChatMessages"
+              className="flex justify-start p-6"
+            >
+              <div className="flex flex-col gap-3">
+                <span className="text-gray-500 text-sm">
+                  Müşteri Temsilcisi
+                </span>
+                <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
                   {message.message}
                 </span>
               </div>
-            ) : (
-              <div
-                id="supportLiveChatMessages"
-                className="flex justify-start p-6"
-              >
-                <div className="flex flex-col gap-3">
-                  <span className="text-gray-500 text-sm">
-                    Müşteri Temsilcisi
-                  </span>
-                  <span className="p-2 text-black border-gray-200 bg-gray-200 rounded-xl rounded-tl-sm dark:bg-gray-700 dark:text-white">
-                    {message.message}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+            </div>
+          )}
+        </div>
+      ))}
 
       <div className="textbox static flex bottom-0 right-0 left-0 p-2">
         <textarea
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleEnterKeyPress}
           value={message}
+          readOnly={supportTextAreaInput}
           className="w-full h-16 p-2 border border-gray-300 rounded-md"
           placeholder="Mesajınızı buraya yazın... livechat"
         ></textarea>

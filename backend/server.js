@@ -1,9 +1,16 @@
 const getAllCustomers = require("./functions/getAllCustomers");
 const sendCustomer = require("./functions/sendCustomer");
-const sendCustomerUpdateRequest = require("./functions/selectedCustomer");
+//const sendCustomerUpdateRequest = require("./functions/selectedCustomer");
 const sendLoginRequest = require("./functions/logIn");
+const updateCustomer = require("./functions/updateCustomers");
+const sendMessages = require("./functions/sendMessages");
+//const createSupporterModule = require("./functions/createSupporter");
+//const getSupporter = require("./functions/getSupporter");
 
 let customerList = [];
+let formDataName = [];
+let supporterId = null;
+let selectedCustomer = [];
 
 const express = require("express");
 const app = express();
@@ -61,35 +68,52 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("Livemessage", async (data) => {
-    console.log("liveChat dn gelen msaj" + data.userName);
+    console.log("liveChat dn gelen msaj111", data);
 
-    // Diğer işlemlerinizi gerçekleştirebilirsiniz.
+    const requestData = {
+      id: data.id,
+      sender: data.sender,
+      date: data.date,
+      message: data.message,
+      userName: data.userName,
+      roomId: data.roomId, // roomId olarak düzeltilmiş
+    };
+
+    try {
+      // İsteği gönder
+      await sendMessages(data.roomID, requestData);
+    } catch (error) {
+      console.error("İstek hatası mesaj ekleme:", error);
+      // Hata durumunda isteği yeniden deneyebilir veya başka bir işlem yapabilirsiniz
+    }
 
     // Gelen mesajı yayınla
     io.emit("Livemessage", {
-      id: socket.id,
-      sender: "customer",
-      date: Date.now(),
+      id: data.id,
+      sender: data.sender,
+      date: data.date,
       message: data.message,
       userName: data.userName,
       roomId: data.roomId,
     });
   });
   socket.on("supportLiveChat", async (data) => {
-    console.log("supportliveChat dn gelen msaj" + data.message);
+    console.log("supportliveChat dn gelen msaj", data);
 
     // Gelen mesajı yayınla
     io.emit("supportLiveChat", {
-      id: socket.id,
+      id: data.supporterId,
       sender: "support",
-      date: Date.now(),
+      date: data.date,
       message: data.message,
       userName: data.userName,
+      roomID: data.roomID,
     });
     console.log(data.userName);
   });
 
   socket.on("formData", async (data) => {
+    formDataName = { name: data.name, roomId: data.roomId };
     console.log("formdata", data);
     try {
       // Form verilerini API'ye gönder
@@ -99,20 +123,25 @@ io.on("connection", (socket) => {
       console.error("Error while sending data to API:", error);
     }
   });
+  socket.emit("formData", formDataName);
 
   async function allCustomers() {
     try {
       const allCustomers = await getAllCustomers();
-      console.log("All customers:", allCustomers);
-      io.emit("allCustomers", {
-        id: allCustomers.id,
-        name: allCustomers.name,
-        email: allCustomers.email,
-        phone: allCustomers.phone,
-        roomId: allCustomers.roomId,
-        supporterId: allCustomers.supporterId,
-        status: allCustomers.status,
-      });
+      //console.log("All customers:", allCustomers);
+      // const formattedCustomers = allCustomers.map((customer) => ({
+      //   id: customer.id,
+      //   name: customer.name,
+      //   email: customer.email,
+      //   phone: customer.phone,
+      //   roomId: customer.roomId,
+      //   supporterId: customer.supporterId,
+      //   status: customer.status,
+      // }));
+      //console.log("formatted list", formattedCustomers[1]);
+
+      // Emit işlemi gerçekleştir
+      io.emit("allCustomers", allCustomers);
     } catch (error) {
       console.error("Error while fetching customers:", error);
     }
@@ -121,14 +150,30 @@ io.on("connection", (socket) => {
   // main fonksiyonunu çağırarak işlemi başlatın
   allCustomers();
 
-  socket.on("selectedCustomer", async (data) => {
-    console.log("seçilen müşteri", data);
-    // gelen bilgiler
-    const { customerId, supporterId, status } = data;
-    // API isteği gönder
-    await sendCustomerUpdateRequest(customerId, supporterId, status);
-  });
+  // async function createSupport() {
+  //   try {
+  //     await createSupporterModule();
+  //   } catch (error) {
+  //     console.error("supporter create error:", error);
+  //   }
+  // }
 
+  //createSupport();
+
+  socket.on("selectedCustomer", async (selectedCustomerFrontend) => {
+    console.log("seçilen müşteriaaa", selectedCustomerFrontend);
+    selectedCustomer = selectedCustomerFrontend;
+    //gelen bilgiler
+
+    //aPI isteği gönder
+
+    await updateCustomer({
+      id: selectedCustomerFrontend.id,
+      status: selectedCustomerFrontend.status,
+      supporterId: selectedCustomerFrontend.supporterId,
+    });
+  });
+  socket.emit("selectedCustomer", selectedCustomer);
   socket.on("logIn", async (data) => {
     try {
       const { email, password } = data;
@@ -138,10 +183,19 @@ io.on("connection", (socket) => {
 
       // Login yanıtını emit et
       socket.emit("logIn", loginResponse);
+      console.log("id kontrol", loginResponse.data.id);
     } catch (error) {
       console.error("Error during login:", error);
     }
   });
+
+  socket.on("log", async (data) => {
+    supporterId = data;
+  });
+  if (supporterId !== null) {
+    socket.emit("log", supporterId);
+    console.log(" LOG emit destek Idsi", supporterId);
+  }
 });
 
 app.get("/", (req, res) => {

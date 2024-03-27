@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { io } from "socket.io-client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import authStore from "./supporterIdStore";
 const URL = "http://localhost:3005";
 
-const LoginPage = ({ handleLogin }) => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [socket, setSocket] = useState(null);
+  const { supporterId, login } = authStore();
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
     setSocket(socket);
@@ -17,10 +19,14 @@ const LoginPage = ({ handleLogin }) => {
       console.log("Bağlantı kuruldu", socket);
     });
     socket.on("logIn", (response) => {
-      console.log("Login response:", response);
+      console.log("Login response:111", response);
       if (response.status === 200) {
-        handleLogin();
+        console.log("navigate if çalıştı");
         navigate("/support-live-chat");
+        login(response.data.id);
+        socket.emit("log", supporterId);
+
+        console.log("supporter ID ", supporterId);
       }
     });
 
@@ -35,7 +41,7 @@ const LoginPage = ({ handleLogin }) => {
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [supporterId, login]);
 
   const handleEmailChange = (event) => {
     setEmail(event.target.value);
@@ -53,11 +59,10 @@ const LoginPage = ({ handleLogin }) => {
         password,
       });
     }
-    // Burada login işlemleri gerçekleştirilebilir
-    console.log("Email:", email);
-    console.log("Password:", password);
-    // Örneğin, login API'si çağrılabilir
   };
+  if (socket) {
+    socket.emit("log", supporterId);
+  }
 
   return (
     <div className="flex justify-center items-center h-screen">

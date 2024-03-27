@@ -24,4 +24,4 @@ async function sendLoginRequest(email, password) {
   }
 }
 
-module.exports = { sendLoginRequest };
+module.exports = sendLoginRequest;
