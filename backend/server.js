@@ -79,13 +79,13 @@ io.on("connection", (socket) => {
       roomId: data.roomId, // roomId olarak düzeltilmiş
     };
 
-    try {
-      // İsteği gönder
-      await sendMessages(data.roomID, requestData);
-    } catch (error) {
-      console.error("İstek hatası mesaj ekleme:", error);
-      // Hata durumunda isteği yeniden deneyebilir veya başka bir işlem yapabilirsiniz
-    }
+    // try {
+    //   // İsteği gönder
+    //   await sendMessages(data.roomID, requestData);
+    // } catch (error) {
+    //   console.error("İstek hatası mesaj ekleme:", error);
+    //   // Hata durumunda isteği yeniden deneyebilir veya başka bir işlem yapabilirsiniz
+    // }
 
     // Gelen mesajı yayınla
     io.emit("Livemessage", {
@@ -95,6 +95,7 @@ io.on("connection", (socket) => {
       message: data.message,
       userName: data.userName,
       roomId: data.roomId,
+      supporterId: data.supporterId,
     });
   });
   socket.on("supportLiveChat", async (data) => {
@@ -113,11 +114,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("formData", async (data) => {
-    formDataName = { name: data.name, roomId: data.roomId };
     console.log("formdata", data);
     try {
       // Form verilerini API'ye gönder
       const responseData = await sendCustomer(data);
+      formDataName = {
+        name: data.name,
+        roomId: data.roomId,
+        customerId: responseData.data.id,
+      };
+      console.log("müşteri gönderme response data", responseData);
       return responseData;
     } catch (error) {
       console.error("Error while sending data to API:", error);

@@ -67,7 +67,7 @@ export default function SupportLiveChat() {
         });
       });
     }
-  }, [socket, liveChatList, addLiveChatList]);
+  }, [socket, liveChatList, addLiveChatList, roomId, setRoomId]);
 
   const handleEnterKeyPress = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -90,7 +90,7 @@ export default function SupportLiveChat() {
         setRoomId(data.roomId);
       });
     }
-  }, [socket, roomId]);
+  }, [socket, roomId, setRoomId]);
 
   const handleSendMessage = () => {
     if (message.trim() !== "" && socket) {
@@ -165,7 +165,7 @@ export default function SupportLiveChat() {
           value={message}
           readOnly={supportTextAreaInput}
           className="w-full h-16 p-2 border border-gray-300 rounded-md"
-          placeholder="Mesajınızı buraya yazın... livechat"
+          placeholder="Mesajınızı buraya yazın... supportlivechat"
         ></textarea>
         <FontAwesomeIcon
           className="absolute right-2 p-4 size-6"

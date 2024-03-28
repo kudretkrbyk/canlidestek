@@ -3,7 +3,8 @@ import React from "react";
 import authStore from "./supporterIdStore";
 import { useState } from "react";
 import { useEffect } from "react";
-//import customerMessageStore from "./Store";
+import { BroadcastChannel } from "broadcast-channel";
+import customerMessageStore from "./Store";
 import { io } from "socket.io-client";
 const URL = "http://localhost:3005";
 
@@ -12,9 +13,14 @@ export default function CustomerIdList({ setSupportTextAreaInput }) {
 
   const [customerWaitingList, setCustomerWaitingList] = useState([]);
   const [selectedCustomerFrontend, setSelectedCustomerFrontend] = useState();
-  const [setSelected] = useState(false);
+
+  const [selectedCustomer] = useState(true);
 
   const { supporterId } = authStore();
+  const { roomId, setRoomId } = customerMessageStore();
+  const customerSelected = new BroadcastChannel("customerSelected");
+
+  const [formRoomID, setFormRoomId] = useState();
 
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
@@ -53,16 +59,34 @@ export default function CustomerIdList({ setSupportTextAreaInput }) {
       });
     }
   }, [socket]);
+  // setSelectedCustomer(true);
 
+  // const customerRoomId = new BroadcastChannel("customerRoomId");
+  // useEffect(() => {
+  //   console.log("useeff calıştı");
+
+  //   customerRoomId.onmessage = (msg) => setFormRoomId(msg);
+  //   console.log("formdan gelen Id==  uef içi", formRoomID);
+  // }, [formRoomID, setFormRoomId, socket]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("formData", (data) => {
+        console.log("formdata", data);
+
+        setRoomId(data.roomId);
+        console.log("******", roomId);
+        console.log("form data müşteri ıd", data.customerId);
+      });
+    }
+  }, [roomId, setRoomId, socket]);
+  console.log("room id , ", roomId);
   const handleCustomerClick = (customerId) => {
-    //setSelected(true);
-
     const selected = customerWaitingList.find(
       (customer) => customer.id === customerId
     );
 
     if (selected) {
-      setSupportTextAreaInput(false);
       console.log("if selected");
       const selectedUpdated = {
         id: selected.id,
@@ -74,6 +98,12 @@ export default function CustomerIdList({ setSupportTextAreaInput }) {
         roomId: selected.roomId,
         selected,
       };
+      if (selectedUpdated.roomId === roomId) {
+        customerSelected.postMessage(selectedCustomer);
+        setSupportTextAreaInput(false);
+      }
+
+      console.log("broadcast", selectedCustomer);
 
       setSelectedCustomerFrontend(selectedUpdated);
     }
@@ -99,7 +129,7 @@ export default function CustomerIdList({ setSupportTextAreaInput }) {
               onClick={() => handleCustomerClick(customer.id)}
               style={{ cursor: "pointer" }}
             >
-              {`ID: ${customer.id}, UserName: ${customer.name}`}
+              {`ID: ${customer.id}, UserName: ${customer.name},roomId: ${customer.roomId}`}
             </li>
           ))}
       </ul>

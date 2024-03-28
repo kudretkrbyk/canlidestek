@@ -25,8 +25,7 @@ const LiveSupport = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [supportAgentMessages, setSupportAgentMessages] = useState([]);
   //const [selectedCustomerUpdated, setSelectedCustomerUpdated] = useState(null);
-  const [selected, setSelected] = useState(false);
-  const [textAreaControl, setTextareaControl] = useState(true);
+  //const [selected, setSelected] = useState(false);
 
   const [message, setMessage] = useState("");
   const [liveChat, setLiveChat] = useState(false);
@@ -38,6 +37,7 @@ const LiveSupport = () => {
   const handleUpdateCustomerInfo = (info) => {
     setCustomerInfo(info);
   };
+
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
     setSocket(socket);
@@ -125,7 +125,6 @@ const LiveSupport = () => {
 
   const test = () => {
     setLiveChat(true);
-    setTextareaControl(true);
 
     socket.emit("request", {
       id: socket.id, //customerId'si oluşuyor.
@@ -134,26 +133,6 @@ const LiveSupport = () => {
     });
     console.log(liveChat);
   };
-  useEffect(() => {
-    if (socket) {
-      socket.on("selectedCustomer", (data) => {
-        setSelected(data.selected);
-      });
-    }
-  }, [socket, selected]);
-  //müşteri mesaj girişi ilk önce form doldurmalı, form dolu olduğunda canlı desteğe bağlanmak isterse
-  // destek personeli seçim yaptığında yazabilmeli.???
-  useEffect(() => {
-    if (liveChat && selected) {
-      console.log("if çalıtı");
-      setTextareaControl(false);
-    } else {
-      if (!textareaReadonly) {
-        console.log("if 22çalıtı");
-        setTextareaControl(false); // Bu durumda textarea kontrolünü kapat
-      }
-    }
-  }, [textareaReadonly]);
 
   return (
     <div className="  ">
@@ -255,6 +234,7 @@ const LiveSupport = () => {
               {" "}
               {/* İçerik buraya gelecek */}
               <LiveChat
+                liveChat={liveChat}
                 _customerInfo={customerInfo}
                 _handleSendMessage={handleSendMessage}
                 socket={socket}
@@ -268,7 +248,7 @@ const LiveSupport = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleEnterKeyPress}
                 value={message}
-                readOnly={textAreaControl}
+                readOnly={textareaReadonly}
                 className="w-full h-16 p-2 border border-gray-300 rounded-md"
                 placeholder="Mesajınızı buraya yazın...canli görüşme"
               ></textarea>

@@ -1,20 +1,25 @@
-import React, { useState, useEffect, Component } from "react";
+import React, { useState, useEffect } from "react";
+import { BroadcastChannel } from "broadcast-channel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import customerMessageStore from "./Store";
 import { io } from "socket.io-client";
+import authStore from "./supporterIdStore";
 
 const URL = "http://localhost:3005";
+let initialMessage = "";
 
-const LiveChat = () => {
+const LiveChat = ({ liveChat }) => {
   const { liveChatList, addLiveChatList } = customerMessageStore();
   const [message, setMessage] = useState("");
   const { roomId, setRoomId } = customerMessageStore();
 
-  const [supporterId, setSupporterId] = useState(null);
+  const { supporterId, login } = authStore();
   const [socket, setSocket] = useState(null);
-  const [setSelectedCustomerUpdated] = useState(null);
+  //const [setSelectedCustomerUpdated] = useState(null);
   const [customerName, setCustomerName] = useState(null);
+  const [selected, setSelected] = useState();
+  const [textAreaReadOnly, setTextareaReadOnly] = useState(true);
 
   useEffect(() => {
     const socket = io.connect(URL, { transports: ["websocket"] });
@@ -35,10 +40,6 @@ const LiveChat = () => {
       console.error("Hata:", error);
     });
 
-    socket.on("selectedSupportId", (data) => {
-      setSupporterId(data);
-    });
-
     // Component unmount olduğunda bağlantıyı kapat
     return () => {
       socket.disconnect();
@@ -50,20 +51,10 @@ const LiveChat = () => {
       handleSendMessage();
     }
   };
-  useEffect(() => {
-    if (socket) {
-      // socket.on("selectedCustomer", (data) => {
-      //   if (data !== null) {
-      //     setRoomId(data.roomId);
-      //     //setSelectedCustomerUpdated(data);
-      //     console.log("live chat roomid", roomId);
-      //     console.log("roomıd ", roomId);
-      //   }
-      // });
-    }
-  }, [roomId, setRoomId]);
-  console.log(roomId);
 
+  console.log(roomId);
+  const customerRoomId = new BroadcastChannel("customerRoomId");
+  customerRoomId.postMessage(roomId);
   useEffect(() => {
     if (socket) {
       socket.on("formData", (data) => {
@@ -71,10 +62,17 @@ const LiveChat = () => {
         setCustomerName(data.name);
         setRoomId(data.roomId);
         console.log("******", roomId);
+        console.log("form data müşteri ıd", data.customerId);
       });
     }
-  }, [roomId, socket]);
-  useEffect(() => {});
+  }, [roomId, setRoomId, socket]);
+  useEffect(() => {
+    if (socket) {
+      socket.on("logIn", (response) => {
+        login(response.data.id);
+      });
+    }
+  }, [supporterId, login]);
   const handleSendMessage = () => {
     if (message.trim() !== "" && roomId !== null) {
       const sender = "customer";
@@ -82,17 +80,17 @@ const LiveChat = () => {
 
       socket.emit("Livemessage", {
         id: 1, //??
-        supporterId,
+        supporterId: supporterId,
         date: Date.now(),
         message,
         sender,
         userName: customerName,
-        roomId,
+        roomId: roomId,
       });
 
       addLiveChatList({
         id: 1,
-        supporterId,
+        supporterId: supporterId,
         date: Date.now(),
         content: message,
         sender,
@@ -117,16 +115,38 @@ const LiveChat = () => {
         });
 
         socket.on("logIn", (response) => {
-          setSupporterId(response.id);
+          login(response.id);
         });
       });
     }
-  }, [socket]);
+  }, [socket, addLiveChatList, liveChatList, login]);
 
   //console.log("müşteri adı", _customerInfo.name);
-  const initialMessage = `Merhaba ${customerName}, size nasıl yardımcı olabilirim?`;
+
+  if (!selected) {
+    initialMessage = `Merhaba ${customerName}, Canlı Destek Ekibimiz En Kısa Sürede Bağlanacak`;
+  } else {
+    initialMessage = `Merhaba ${customerName}, Canlı Destek Ekibimiz Bağlandı Size Nasıl YArdımcı Olabiliriz`;
+  }
+
   const sortedMessages = liveChatList.sort((a, b) => a.time - b.time);
   console.log("gelen mesajlar live chat", sortedMessages);
+
+  //müşteri mesaj girişi ilk önce form doldurmalı, form dolu olduğunda canlı desteğe bağlanmak isterse
+  // destek personeli seçim yaptığında yazabilmeli.???
+
+  useEffect(() => {
+    const customerSelected = new BroadcastChannel("customerSelected");
+    customerSelected.onmessage = (msg) => setSelected(msg);
+    console.log("broadCast", selected);
+    if (liveChat && selected) {
+      console.log("if çalıtı");
+      setTextareaReadOnly(false);
+    } else {
+      setTextareaReadOnly(true);
+    }
+  }, [selected, liveChat]); //deneme yap!!
+
   return (
     <div>
       {" "}
@@ -173,6 +193,7 @@ const LiveChat = () => {
         <textarea
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleEnterKeyPress}
+          readOnly={textAreaReadOnly}
           value={message}
           className="w-full h-16 p-2 border border-gray-300 rounded-md"
           placeholder="Mesajınızı buraya yazın... livechat"
